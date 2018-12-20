@@ -22,4 +22,4 @@ public class QuoteRouter {
 		return RouterFunctions
 				.route(GET("/quotes").and(accept(APPLICATION_STREAM_JSON)), quoteHandler::streamQuotes) ;
 	}
-}
+j}
