@@ -65,6 +65,43 @@ In this section, we'll call our remote `stock-quotes` service to get Quotes from
 Create a `QuotesClient` annotated with `@Component` and inject a `WebClient.Builder`. Now, create a method in the `QuotesClient` called
 `quotesFeed` which will use the `webClient` to consume the stream of quotes via Server Sent Events (SSE).
 
+
+It should look like this...
+
+[source,java]
+----------
+package io.spring.workshop.tradingservice;
+
+import java.time.Duration;
+import java.util.stream.Stream;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import static org.springframework.http.MediaType.APPLICATION_STREAM_JSON;
+
+@Component
+public class QuotesClient {
+
+  private final WebClient webClient;
+
+  public QuotesClient(WebClient.Builder webclientBuilder) {
+    this.webClient = webclientBuilder.build();
+  }
+
+  public Flux<Quote> quotesFeed() {
+    return this.webClient.get()
+                         .uri("http://localhost:8081/quotes")
+                         .accept(APPLICATION_STREAM_JSON)
+                         .retrieve()
+                         .bodyToFlux(Quote.class);
+  }
+}
+----------
+
 NOTE: There are two ways to use a `WebClient`, directly via the static factory or by injecting the `WebClient.Builder`.
 The latter is used by libraries such as Spring Cloud Sleuth that enrich `WebClient` with extra features.
 
@@ -75,6 +112,46 @@ with a `Flux<Quote>` as the response body. The data can be retrieved from the `q
 You can test it by starting both applications. First, start the Stock Quotes application.
 It can be started from your IDE or with `mvn spring-boot:run` and it should run a Netty server on port 8081.
 You should see in the logs something like:
+
+The `QuotesController` should look like this : 
+
+[source,java]
+----
+package io.spring.workshop.tradingservice;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
+
+@Controller
+public class QuotesController {
+
+  private final TradingCompanyClient tradingCompanyClient;
+
+  private final QuotesClient quotesClient;
+
+  public QuotesController(TradingCompanyClient tradingCompanyClient, QuotesClient quotesClient) {
+    this.tradingCompanyClient = tradingCompanyClient;
+    this.quotesClient = quotesClient;
+  }
+
+  @GetMapping(path = "/quotes/feed", produces = TEXT_EVENT_STREAM_VALUE)
+  @ResponseBody
+  public Flux<Quote> quotesFeed() {
+    return this.quotesClient.quotesFeed();
+  }
+}
+----
 
 [source,bash]
 ----
