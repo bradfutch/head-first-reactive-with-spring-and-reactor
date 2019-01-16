@@ -218,6 +218,23 @@ include::../stock-details/src/main/java/io/spring/workshop/stockdetails/TradingC
 Now create a `TradingCompanyRepository` interface that extends `ReactiveMongoRepository`.
 Add a `findByTicker(String ticker)` method that returns a single `TradingCompany` in a reactive fashion.
 
+HINT:
+
+[source, java]
+-----
+package io.spring.workshop.stockdetails;
+
+import reactor.core.publisher.Mono;
+
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+
+public interface TradingCompanyRepository extends ReactiveMongoRepository<TradingCompany, String> {
+
+	Mono<TradingCompany> findByTicker(String ticker);
+
+}
+-----
+
 We'd like to insert trading companies in our datastore when the application starts up. For that, create a `TradingCompanyCommandLineRunner`
 component that implements Spring Boot's `CommandLineRunner`. In the `run` method, use the reactive repository
 to insert `TradingCompany` instances in the datastore.
@@ -225,6 +242,45 @@ to insert `TradingCompany` instances in the datastore.
 NOTE: Since the `run` method returns void, it expects a blocking implementation. This is why you should use the
 `blockLast(Duration)` operator on the `Flux` returned by the repository when inserting data.
 You can also `then().block(Duration)` to turn that `Flux` into a `Mono<Void>` that waits for completion.
+
+HINT :
+
+[source, java]
+-----
+package io.spring.workshop.stockdetails;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+@Component
+public class TradingCompanyCommandLineRunner implements CommandLineRunner {
+
+	private final TradingCompanyRepository repository;
+
+	public TradingCompanyCommandLineRunner(TradingCompanyRepository repository) {
+		this.repository = repository;
+	}
+
+	@Override
+	public void run(String... strings) {
+		List<TradingCompany> companies = Arrays.asList(
+				new TradingCompany("Pivotal Software", "PVTL"),
+				new TradingCompany("Dell Technologies", "DELL"),
+				new TradingCompany("Google", "GOOG"),
+				new TradingCompany("Microsoft", "MSFT"),
+				new TradingCompany("Oracle", "ORCL"),
+				new TradingCompany("Red Hat", "RHT"),
+				new TradingCompany("Vmware", "VMW")
+		);
+		this.repository.insert(companies).blockLast(Duration.ofSeconds(30));
+	}
+
+}
+-----
 
 === Create a JSON web service
 
