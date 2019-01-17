@@ -45,9 +45,21 @@ Unzip the given file into a directory and import that application into your IDE.
 If generated right, you should have a main `Application` class that looks like this:
 
 [source,java]
-.stock-quotes/src/main/java/io/spring/workshop/tradingservice/TradingServiceApplication.java
+.trading-service/src/main/java/io/spring/workshop/tradingservice/TradingServiceApplication.java
 ----
-include::../trading-service/src/main/java/io/spring/workshop/tradingservice/TradingServiceApplication.java[]
+package io.spring.workshop.tradingservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TradingServiceApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TradingServiceApplication.class, args);
+	}
+
+}
 ----
 
 Note that, by default, `spring-boot-starter-webflux` transitively brings `spring-boot-starter-reactor-netty`
@@ -62,11 +74,20 @@ In this section, we'll call our remote `stock-quotes` service to get Quotes from
 * copy over the `Quote` class to this application
 * add the Jackson JSR310 module dependency
 
+[source, xml]
+------
+<dependency>
+    <groupId>com.fasterxml.jackson.datatype</groupId>
+    <artifactId>jackson-datatype-jsr310</artifactId>
+    <version>2.9.8</version>
+</dependency>
+------
+
 Create a `QuotesClient` annotated with `@Component` and inject a `WebClient.Builder`. Now, create a method in the `QuotesClient` called
 `quotesFeed` which will use the `webClient` to consume the stream of quotes via Server Sent Events (SSE).
 
 
-It should look like this...
+HINT!...
 
 [source,java]
 ----------
@@ -113,22 +134,17 @@ You can test it by starting both applications. First, start the Stock Quotes app
 It can be started from your IDE or with `mvn spring-boot:run` and it should run a Netty server on port 8081.
 You should see in the logs something like:
 
-The `QuotesController` should look like this : 
+HINT!!! ... The `QuotesController` should look like this : 
 
 [source,java]
 ----
 package io.spring.workshop.tradingservice;
 
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
@@ -136,12 +152,9 @@ import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
 @Controller
 public class QuotesController {
 
-  private final TradingCompanyClient tradingCompanyClient;
-
   private final QuotesClient quotesClient;
 
-  public QuotesController(TradingCompanyClient tradingCompanyClient, QuotesClient quotesClient) {
-    this.tradingCompanyClient = tradingCompanyClient;
+  public QuotesController(QuotesClient quotesClient) {
     this.quotesClient = quotesClient;
   }
 
@@ -186,7 +199,19 @@ If generated right, you should have a main `Application` class that looks like t
 [source,java]
 .stock-details/src/main/java/io/spring/workshop/stockdetails/StockDetailsApplication.java
 ----
-include::../stock-details/src/main/java/io/spring/workshop/stockdetails/StockDetailsApplication.java[]
+package io.spring.workshop.stockdetails;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class StockDetailsApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(StockDetailsApplication.class, args);
+	}
+
+}
 ----
 
 Edit your `application.properties` file to start the server on port 8082.
@@ -194,7 +219,8 @@ Edit your `application.properties` file to start the server on port 8082.
 [source,properties]
 .stock-details/src/main/resources/application.properties
 ----
-include::../stock-details/src/main/resources/application.properties[]
+server.port=8082
+spring.application.name=stock-details
 ----
 
 === Use a reactive datastore
@@ -204,7 +230,10 @@ In this application, we’ll use a MongoDB datastore with its reactive driver; f
 [source,xml]
 .stock-details/pom.xml
 ----
-include::../stock-details/pom.xml[tags=inMemMongo]
+<dependency>
+      <groupId>de.flapdoodle.embed</groupId>
+      <artifactId>de.flapdoodle.embed.mongo</artifactId>
+</dependency>
 ----
 
 We'd like to manage `TradingCompany` with our datastore.
@@ -212,7 +241,77 @@ We'd like to manage `TradingCompany` with our datastore.
 [source,java]
 .stock-details/src/main/java/io/spring/workshop/stockdetails/TradingCompany.java
 ----
-include::../stock-details/src/main/java/io/spring/workshop/stockdetails/TradingCompany.java[]
+package io.spring.workshop.stockdetails;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+public class TradingCompany {
+
+  @Id
+  private String id;
+
+  private String description;
+
+  private String ticker;
+
+  public TradingCompany() {
+  }
+
+  public TradingCompany(String id, String description, String ticker) {
+    this.id = id;
+    this.description = description;
+    this.ticker = ticker;
+  }
+
+  public TradingCompany(String description, String ticker) {
+    this.description = description;
+    this.ticker = ticker;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public String getTicker() {
+    return ticker;
+  }
+
+  public void setTicker(String ticker) {
+    this.ticker = ticker;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    TradingCompany that = (TradingCompany) o;
+
+    if (!id.equals(that.id)) return false;
+    return description.equals(that.description);
+  }
+
+  @Override
+      public int hashCode() {
+          int result = id.hashCode();
+          result = 31 * result + description.hashCode();
+          return result;
+      }
+}
 ----
 
 Now create a `TradingCompanyRepository` interface that extends `ReactiveMongoRepository`.
@@ -291,7 +390,7 @@ Then add two new Controller methods in order to handle:
 * GET requests to  `"/details"`, returning all `TradingCompany` instances, serializing them with content-type `"application/json"`
 * GET requests to  `"/details/{ticker}"`, returning a single `TradingCompany` instance, serializing it with content-type `"application/json"`
 
-HINT :
+Partial (!!) HINT :
 
 [source, java]
 -----
