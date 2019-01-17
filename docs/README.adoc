@@ -446,7 +446,27 @@ Copy the following class to your project.
 [source,java]
 .trading-service/src/main/java/io/spring/workshop/tradingservice/TradingCompanySummary.java
 ----
-include::../trading-service/src/main/java/io/spring/workshop/tradingservice/TradingCompanySummary.java[]
+package io.spring.workshop.tradingservice;
+
+public class TradingCompanySummary {
+
+    private final Quote latestQuote;
+
+    private final TradingCompany tradingCompany;
+
+    public TradingCompanySummary(TradingCompany tradingCompany, Quote latestQuote) {
+        this.latestQuote = latestQuote;
+        this.tradingCompany = tradingCompany;
+    }
+
+    public Quote getLatestQuote() {
+        return latestQuote;
+    }
+
+    public TradingCompany getTradingCompany() {
+        return tradingCompany;
+    }
+}
 ----
 
 Now, add another method to the `QuotesController` which can handle requests to `/quotes/summary/{ticker}`.
