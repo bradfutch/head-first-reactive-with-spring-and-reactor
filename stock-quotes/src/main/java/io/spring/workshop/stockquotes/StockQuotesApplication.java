@@ -9,4 +9,6 @@ public class StockQuotesApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(StockQuotesApplication.class, args);
 	}
+
 }
+

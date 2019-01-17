@@ -1,0 +1,16 @@
+---
+applications:
+- name: stock-quotes
+  memory: 1024M
+  random-route: true
+  instances: 1
+  path: ./target/stock-quotes-0.0.1-SNAPSHOT.jar
+  buildpacks:
+  - java_buildpack_offline
+  stack: cflinuxfs3
+  timeout: 180 # to give time for the data to import
+  env:
+    JAVA_OPTS: -Djava.security.egd=file:///dev/urandom
+    TRUST_CERTS: apy.sys.escondido.cf-app.com
+  services:
+  - service-registry

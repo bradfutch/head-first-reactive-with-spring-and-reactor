@@ -808,6 +808,30 @@ public class StockQuotesApplicationTests {
 }
 ----
 
+
+== Push to Cloud Foundry
+
+First we're going to need a manifest for the `stock-quotes app.  It should look like this :
+
+[source, bash]
+----
+---
+applications:
+- name: stock-quotes
+  memory: 1024M
+  random-route: true
+  instances: 1
+  path: ./target/stock-quotes-0.0.1-SNAPSHOT.jar
+  buildpacks:
+  - java_buildpack_offline
+  stack: cflinuxfs3
+  timeout: 180 # to give time for the data to import
+  env:
+    JAVA_OPTS: -Djava.security.egd=file:///dev/urandom
+  services:
+  - service-registry
+----
+
 == Additional Resources
 
 Talks on Spring Reactive:
