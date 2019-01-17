@@ -501,7 +501,19 @@ If generated right, you should have a main `Application` class that looks like t
 [source,java]
 .stock-quotes/src/main/java/io/spring/workshop/stockquotes/StockQuotesApplication.java
 ----
-include::../stock-quotes/src/main/java/io/spring/workshop/stockquotes/StockQuotesApplication.java[]
+package io.spring.workshop.stockquotes;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class StockQuotesApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(StockQuotesApplication.class, args);
+	}
+
+}
 ----
 
 Edit your `application.properties` file to start the server on port 8081.
@@ -509,7 +521,7 @@ Edit your `application.properties` file to start the server on port 8081.
 [source,properties]
 .stock-quotes/src/main/resources/application.properties
 ----
-include::../stock-quotes/src/main/resources/application.properties[]
+server.port=8081
 ----
 
 Launching it from your IDE or with `mvn spring-boot:run` should start a Netty server on port 8081.
@@ -529,13 +541,144 @@ Copy the following classes to your project.
 [source,java]
 .stock-quotes/src/main/java/io/spring/workshop/stockquotes/Quote.java
 ----
-include::../stock-quotes/src/main/java/io/spring/workshop/stockquotes/Quote.java[]
+package io.spring.workshop.stockquotes;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.Instant;
+
+public class Quote {
+
+  private static final MathContext MATH_CONTEXT = new MathContext(2);
+
+  private String ticker;
+
+  private BigDecimal price;
+
+  private Instant instant = Instant.now();
+
+  public Quote() {
+  }
+
+  public Quote(String ticker, BigDecimal price) {
+    this.ticker = ticker;
+    this.price = price;
+  }
+
+  public Quote(String ticker, Double price) {
+    this(ticker, new BigDecimal(price, MATH_CONTEXT));
+  }
+
+  public String getTicker() {
+    return ticker;
+  }
+
+  public void setTicker(String ticker) {
+    this.ticker = ticker;
+  }
+
+  public BigDecimal getPrice() {
+    return price;
+  }
+
+  public void setPrice(BigDecimal price) {
+    this.price = price;
+  }
+
+  public Instant getInstant() {
+    return instant;
+  }
+
+  public void setInstant(Instant instant) {
+    this.instant = instant;
+  }
+
+  @Override
+  public String toString() {
+    return "Quote{" +
+        "ticker='" + ticker + '\'' +
+        ", price=" + price +
+        ", instant=" + instant +
+        '}';
+  }
+}
 ----
 
 [source,java]
 .stock-quotes/src/main/java/io/spring/workshop/stockquotes/QuoteGenerator.java
 ----
-include::../stock-quotes/src/main/java/io/spring/workshop/stockquotes/QuoteGenerator.java[]
+package io.spring.workshop.stockquotes;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+
+import reactor.core.publisher.Flux;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class QuoteGenerator {
+
+    private final MathContext mathContext = new MathContext(2);
+
+    private final Random random = new Random();
+
+    private final List<Quote> prices = new ArrayList<>();
+
+    private final Flux<Quote> quoteStream;
+
+    /**
+     * Bootstraps the generator with tickers and initial prices
+     */
+    public QuoteGenerator() {
+        initializeQuotes();
+        this.quoteStream = getQuoteStream();
+    }
+
+    public Flux<Quote> fetchQuoteStream() {
+        return quoteStream;
+    }
+
+    private void initializeQuotes() {
+        this.prices.add(new Quote("PVTL", 82.26));
+        this.prices.add(new Quote("DELL", 63.74));
+        this.prices.add(new Quote("GOOG", 847.24));
+        this.prices.add(new Quote("MSFT", 65.11));
+        this.prices.add(new Quote("ORCL", 45.71));
+        this.prices.add(new Quote("RHT", 84.29));
+        this.prices.add(new Quote("VMW", 92.21));
+    }
+
+
+    private Flux<Quote> getQuoteStream() {
+        return Flux.interval(Duration.ofMillis(200))
+                .onBackpressureDrop()
+                .map(this::generateQuotes)
+                .flatMap(Flux::fromIterable)
+                .share();
+    }
+
+    private List<Quote> generateQuotes(long i) {
+        Instant instant = Instant.now();
+        return prices.stream()
+                .map(baseQuote -> {
+                    BigDecimal priceChange = baseQuote.getPrice()
+                            .multiply(new BigDecimal(0.05 * this.random.nextDouble()), this.mathContext);
+
+                    Quote result = new Quote(baseQuote.getTicker(), baseQuote.getPrice().add(priceChange));
+                    result.setInstant(instant);
+                    return result;
+                })
+                .collect(Collectors.toList());
+    }
+}
 ----
 
 Because we're working with `java.time.Instant` and Jackson, we should import the dedicated module in our app.
@@ -546,7 +689,10 @@ multiple subscribers (look at the `Flux` operators for that). This instance is k
 [source,xml]
 .stock-quotes/pom.xml
 ----
-include::../stock-quotes/pom.xml[tags=jacksonJSR310]
+<dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+</dependency>
 ----
 
 === Functional web applications with "WebFlux.fn"
@@ -558,7 +704,7 @@ Incoming HTTP requests are handled by a `HandlerFunction`, which is essentially 
 that takes a ServerRequest and returns a `Mono<ServerResponse>`. The annotation counterpart
 to a handler function would be a Controller method.
 
-But how those incoming requests are routed to the right handler?
+But how are those incoming requests are routed to the right handler?
 
 We're using a `RouterFunction`, which is a function that takes a `ServerRequest`, and returns
 a `Mono<HandlerFunction>`. If a request matches a particular route, a handler function is returned;
@@ -615,7 +761,51 @@ integration test:
 [source,java]
 .stock-quotes/src/test/java/io/spring/workshop/stockquotes/StockQuotesApplicationTests.java
 ----
-include::../stock-quotes/src/test/java/io/spring/workshop/stockquotes/StockQuotesApplicationTests.java[]
+package io.spring.workshop.stockquotes;
+
+import java.util.List;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.web.reactive.server.WebTestClient;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@RunWith(SpringRunner.class)
+//  We create a `@SpringBootTest`, starting an actual server on a `RANDOM_PORT`
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class StockQuotesApplicationTests {
+
+  // Spring Boot will create a `WebTestClient` for you,
+  // already configure and ready to issue requests against "localhost:RANDOM_PORT"
+  @Autowired
+  private WebTestClient webTestClient;
+
+  @Test
+  public void fetchQuotes() {
+    List<Quote> result =
+        webTestClient
+        // We then create a GET request to test an endpoint
+        .get().uri("/quotes")
+        .accept(MediaType.APPLICATION_STREAM_JSON)
+        .exchange()
+        // and use the dedicated DSL to test assertions against the response
+        .expectStatus().isOk()
+        .expectHeader().contentType(MediaType.APPLICATION_STREAM_JSON)
+        .returnResult(Quote.class)
+        .getResponseBody()
+        .take(20)
+        .collectList()
+        .block();
+
+    assertThat(result).allSatisfy(quote -> assertThat(quote.getPrice()).isPositive());
+  }
+}
 ----
 
 == Additional Resources
