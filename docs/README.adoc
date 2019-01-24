@@ -38,7 +38,7 @@ We will start off by creating the Trading Service application which gets data fr
 
 === Create this application
 
-Go to `https://start.spring.io` and create a Maven project with Spring Boot {spring-boot-version},
+Go to `https://start.spring.io` and create a Gradle project with Spring Boot {spring-boot-version},
 with groupId `io.spring.workshop` and artifactId `trading-service`. Select the `Reactive Web` and `Devtools` dependencies.
 Unzip the given file into a directory and import that application into your IDE.
 
@@ -74,13 +74,10 @@ In this section, we'll call our remote `stock-quotes` service to get Quotes from
 * copy over the `Quote` class to this application
 * add the Jackson JSR310 module dependency
 
-[source, xml]
+[source]
+.trading-service/build.gradle
 ------
-<dependency>
-    <groupId>com.fasterxml.jackson.datatype</groupId>
-    <artifactId>jackson-datatype-jsr310</artifactId>
-    <version>2.9.8</version>
-</dependency>
+compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
 ------
 
 Create a `QuotesClient` annotated with `@Component` and inject a `WebClient.Builder`. Now, create a method in the `QuotesClient` called
@@ -93,33 +90,28 @@ HINT!...
 ----------
 package io.spring.workshop.tradingservice;
 
-import java.time.Duration;
-import java.util.stream.Stream;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 
 import static org.springframework.http.MediaType.APPLICATION_STREAM_JSON;
 
 @Component
 public class QuotesClient {
 
-  private final WebClient webClient;
+    private final WebClient webClient;
 
-  public QuotesClient(WebClient.Builder webclientBuilder) {
-    this.webClient = webclientBuilder.build();
-  }
+    public QuotesClient(WebClient.Builder webclientBuilder) {
+        this.webClient = webclientBuilder.build();
+    }
 
-  public Flux<Quote> quotesFeed() {
-    return this.webClient.get()
-                         .uri("http://localhost:8081/quotes")
-                         .accept(APPLICATION_STREAM_JSON)
-                         .retrieve()
-                         .bodyToFlux(Quote.class);
-  }
+    public Flux<Quote> quotesFeed() {
+        return this.webClient.get()
+                .uri("http://localhost:8081/quotes")
+                .accept(APPLICATION_STREAM_JSON)
+                .retrieve()
+                .bodyToFlux(Quote.class);
+    }
 }
 ----------
 
@@ -131,40 +123,9 @@ Add a method that responds to `"GET /quotes/feed"` requests with the `"text/even
 with a `Flux<Quote>` as the response body. The data can be retrieved from the `quotesFeed` method on `QuotesClient`.
 
 You can test it by starting both applications. First, start the Stock Quotes application.
-It can be started from your IDE or with `mvn spring-boot:run` and it should run a Netty server on port 8081.
+It can be started from your IDE or with `./gradlew bootRun` and it should run a Netty server on port 8081.
 You should see in the logs something like:
 
-HINT!!! ... The `QuotesController` should look like this : 
-
-[source,java]
-----
-package io.spring.workshop.tradingservice;
-
-import reactor.core.publisher.Flux;
-
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
-
-@Controller
-public class QuotesController {
-
-  private final QuotesClient quotesClient;
-
-  public QuotesController(QuotesClient quotesClient) {
-    this.quotesClient = quotesClient;
-  }
-
-  @GetMapping(path = "/quotes/feed", produces = TEXT_EVENT_STREAM_VALUE)
-  @ResponseBody
-  public Flux<Quote> quotesFeed() {
-    return this.quotesClient.quotesFeed();
-  }
-}
-----
 
 [source,bash]
 ----
@@ -172,7 +133,38 @@ INFO 2208 --- [  restartedMain] o.s.b.web.embedded.netty.NettyWebServer  : Netty
 INFO 2208 --- [  restartedMain] i.s.w.s.StockQuotesApplication           : Started StockQuotesApplication in 1.905 seconds (JVM running for 3.075)
 ----
 
-Start the Trading Service application from your IDE or with `mvn spring-boot:run`. This should run a Netty server on port 8080.
+
+HINT!!! ... The `QuotesController` should look like this :
+
+[source,java]
+----
+package io.spring.workshop.tradingservice;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import reactor.core.publisher.Flux;
+
+import static org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE;
+
+@Controller
+public class QuotesController {
+
+    private final QuotesClient quotesClient;
+
+    public QuotesController(QuotesClient quotesClient) {
+        this.quotesClient = quotesClient;
+    }
+
+    @GetMapping(path = "/quotes/feed", produces = TEXT_EVENT_STREAM_VALUE)
+    @ResponseBody
+    public Flux<Quote> quotesFeed() {
+        return this.quotesClient.quotesFeed();
+    }
+}
+----
+
+Start the Trading Service application from your IDE or with `./gradlew bootRun`. This should run a Netty server on port 8080.
 
 [source,bash]
 ----
@@ -188,7 +180,7 @@ Now, let's create another application that can provide the details for a trading
 
 === Create this application
 
-Go to `https://start.spring.io` and create a Maven project with Spring Boot {spring-boot-version},
+Go to `https://start.spring.io` and create a Gradle project with Spring Boot {spring-boot-version},
 with groupId `io.spring.workshop` and artifactId `stock-details`. Select the `Reactive Web`, `Devtools`
 and `Reactive Mongo` dependencies.
 
@@ -227,13 +219,10 @@ spring.application.name=stock-details
 
 In this application, we’ll use a MongoDB datastore with its reactive driver; for this workshop, we’ll use an in-memory instance of MongoDB. So add the following:
 
-[source,xml]
-.stock-details/pom.xml
+[source]
+.stock-details/build.gradle
 ----
-<dependency>
-      <groupId>de.flapdoodle.embed</groupId>
-      <artifactId>de.flapdoodle.embed.mongo</artifactId>
-</dependency>
+testCompile group: 'de.flapdoodle.embed', name: 'de.flapdoodle.embed.mongo'
 ----
 
 We'd like to manage `TradingCompany` with our datastore.
@@ -396,11 +385,11 @@ Partial (!!) HINT :
 -----
 @GetMapping( path = "/details/{ticker}", produces = "application/json")
     public Mono<TradingCompany> getTicker(@PathVariable String ticker) {
-        return repo.findByTicker( ticker );
+        return repository.findByTicker( ticker );
     }
 -----
 
-It can be started from your IDE or with `mvn spring-boot:run` and it should run a Netty server on port 8082.
+It can be started from your IDE or with `./gradlew bootRun` and it should run a Netty server on port 8082.
 You should see in the logs something like:
 
 [source,bash]
@@ -422,6 +411,8 @@ Then add two methods:
 * `getTradingCompany` will return a `Mono<TradingCompany>` by using the webClient to get data from the `/details/{ticker}` endpoint from the Stock details application
   - If no trading company is found for the given ticker, the `Mono` will complete without any data. Instead, we will emit a `TickerNotFoundException` error using the `switchIfEmpty` operator.
 
+HINT: You will need the TradingCompany class. You can copy it from Stock Details application but will need to remove the Mongo annotations.
+
 Let's expose the two `TradingCompanyClient` methods with a local `TradingCompanyController`.
 
 You might have updated an already running `TradingServiceApplication`. Since DevTools is present, you can just recompile to automatically restart the application.
@@ -432,12 +423,14 @@ You can test the new endpoints by hitting:
 * http://localhost:8080/details/MSFT to get details for a particular ticker
 * http://localhost:8080/details/PIZZA to see what happens for an unknown ticker
 
+WARNING: If you run into a '406 Not Acceptable' error the MediaType on the client and the controller are most likely different. Make sure they are both "application/json" and not "application/stream+json".
+
 Let's add a method called `getLatestQuote(String ticker)` on the `QuotesClient` which will get the latest quote for a given ticker from the quotes feed.
 
-* Reuse `quotesFeed` to get the actual feed
-* Filter the stream of quotes with quotes matching the given ticker
-* Take the next matching quote
-* If no matching quote is found within 15 seconds, then return a fallback `Quote` for the ticker.
+* Reuse `quotesFeed()` to get the feed stream
+* `Filter()` the stream of quotes utilizing a Predicate that matches the given ticker
+* Take the `next()` matching quote
+* If no matching quote is found within a 15 second `timeout()`, then return a fallback `Quote` for the ticker using `Mono.just()`.
 
 Now, we want to combine data produced by `stock-quotes` and `stock-details` as a `TradingCompanySummary`.
 
@@ -474,10 +467,10 @@ Now, add another method to the `QuotesController` which can handle requests to `
 * Use the `TradingCompanyClient` to get the details for the company with the given ticker
 * Create a `TradingCompanySummary` by composing the details with the latest quote from the `QuotesClient`
 
-TIP: You can compose two reactive results using `Mono.zip(monoA, monoB, biFunction)` or `monoA.zipWith(monoB, biFunction)`.
+TIP: You can compose two reactive results using `Mono.zip(monoA, monoB, biFunction)` or `monoA.zipWith(monoB, biFunction)`. This example should have  a return type of TradingCompanySummary::new
 
 We need to handle the `TickerNotFoundException` emitted by the `TradingCompanyClient` as an HTTP 404.
-You will need to create a method annotated with `@ExceptionHandler`.
+You will need to create a method annotated with `@ExceptionHandler` and the `@ResponseStatus`.
 
 Again, because of DevTools we can just recompile and test by hitting:
 
@@ -491,7 +484,7 @@ Fasten your seatbelt and remove the stock-quotes directory!
 
 === Create this application
 
-Go to `https://start.spring.io` and create a Maven project with Spring Boot {spring-boot-version},
+Go to `https://start.spring.io` and create a Gradle project with Spring Boot {spring-boot-version},
 with groupId `io.spring.workshop` and artifactId `stock-quotes`. Select the `Reactive Web` and `Devtools`
 dependencies.
 Unzip the given file into a directory and import that application into your IDE.
@@ -524,7 +517,7 @@ Edit your `application.properties` file to start the server on port 8081.
 server.port=8081
 ----
 
-Launching it from your IDE or with `mvn spring-boot:run` should start a Netty server on port 8081.
+Launching it from your IDE or with `./gradlew bootRun` should start a Netty server on port 8081.
 You should see in the logs something like:
 
 [source,bash]
@@ -687,12 +680,9 @@ NOTE: The `QuoteGenerator` instantiates a `Flux<Quote>` that emits a `Quote` eve
 multiple subscribers (look at the `Flux` operators for that). This instance is kept as an attribute for reusability.
 
 [source,xml]
-.stock-quotes/pom.xml
+.stock-quotes/build.gradle
 ----
-<dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-</dependency>
+compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
 ----
 
 === Functional web applications with "WebFlux.fn"
