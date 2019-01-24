@@ -1,5 +1,6 @@
 package io.spring.workshop.tradingservice;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -13,23 +14,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Component
 public class TradingCompanyClient {
 
-	private final WebClient webClient;
-
-	public TradingCompanyClient(WebClient.Builder builder) {
-		this.webClient = builder.build();
-	}
+	@Autowired
+	private WebClient.Builder webClientBuilder;
 
 	public Flux<TradingCompany> findAllCompanies() {
-		return this.webClient.get()
-				.uri("http://localhost:8082/details")
+		return this.webClientBuilder.build().get()
+				.uri("http://stock-details/details")
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToFlux(TradingCompany.class);
 	}
 
 	public Mono<TradingCompany> getTradingCompany(String ticker) {
-		return this.webClient.get()
-				.uri("http://localhost:8082/details/{ticker}", ticker)
+		return this.webClientBuilder.build().get()
+				.uri("http://stock-details/details/{ticker}", ticker)
 				.accept(MediaType.APPLICATION_JSON)
 				.retrieve()
 				.bodyToMono(TradingCompany.class)
