@@ -23,7 +23,7 @@ public class TradingCompanyController {
 
     @GetMapping(path = "/details/{ticker}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<TradingCompany> showTradingCompanies(@PathVariable String ticker) {
-        return this.tradingCompanyRepository.findByTicker(ticker);
+        return this.tradingCompanyRepository.findByTickerIgnoreCase(ticker);
     }
 
 }

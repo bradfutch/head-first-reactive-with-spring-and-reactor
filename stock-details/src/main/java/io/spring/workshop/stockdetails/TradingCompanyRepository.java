@@ -6,6 +6,6 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 
 public interface TradingCompanyRepository extends ReactiveMongoRepository<TradingCompany, String> {
 
-	Mono<TradingCompany> findByTicker(String ticker);
+	Mono<TradingCompany> findByTickerIgnoreCase(String ticker);
 
 }
