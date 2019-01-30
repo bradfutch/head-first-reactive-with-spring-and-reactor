@@ -1,0 +1,15 @@
+---
+defaults: &defaults
+  random-route: true
+  services:
+    - service-registry
+applications:
+- name: stock-details
+  path: stock-details/build/libs/stock-details-0.0.1-SNAPSHOT.jar
+  <<: *defaults
+- name: stock-quotes
+  path: stock-quotes/build/libs/stock-quotes-0.0.1-SNAPSHOT.jar
+  <<: *defaults
+- name: trading-service
+  path: trading-service/build/libs/trading-service-0.0.1-SNAPSHOT.jar
+  <<: *defaults

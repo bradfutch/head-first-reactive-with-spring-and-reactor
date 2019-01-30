@@ -43,7 +43,7 @@ public class TradingCompanyControllerTests {
   public void getTradingCompany() {
     TradingCompany soo = new TradingCompany("1", "The Sooshi Company", "SOO");
 
-    BDDMockito.given(this.repository.findByTicker("SOO"))
+    BDDMockito.given(this.repository.findByTickerIgnoreCase("SOO"))
         .willReturn(Mono.just(soo));
 
     this.webTestClient.get().uri("/details/SOO").accept(MediaType.APPLICATION_JSON)
