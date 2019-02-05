@@ -25,8 +25,8 @@ public class TradingCompanyControllerTests {
 
   @Test
   public void listTradingCompanies() {
-    TradingCompany soo = new TradingCompany("1", "The Sooshi Company", "SOO");
-    TradingCompany pizza = new TradingCompany("2", "Pizza & friends", "PIZZA");
+    TradingCompany soo = new TradingCompany("The Sooshi Company", "SOO");
+    TradingCompany pizza = new TradingCompany("Pizza & friends", "PIZZA");
 
     BDDMockito.given(this.repository.findAll())
         .willReturn(Flux.just(soo, pizza));
@@ -41,7 +41,7 @@ public class TradingCompanyControllerTests {
 
   @Test
   public void getTradingCompany() {
-    TradingCompany soo = new TradingCompany("1", "The Sooshi Company", "SOO");
+    TradingCompany soo = new TradingCompany("The Sooshi Company", "SOO");
 
     BDDMockito.given(this.repository.findByTickerIgnoreCase("SOO"))
         .willReturn(Mono.just(soo));

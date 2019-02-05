@@ -1,38 +1,27 @@
 package io.spring.workshop.stockdetails;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document
+import java.util.Objects;
+
 public class TradingCompany {
 
 	@Id
-	private String id;
+	private String ticker;
 
 	private String description;
-
-	private String ticker;
 
 	public TradingCompany() {
 	}
 
-	public TradingCompany(String id, String description, String ticker) {
-		this.id = id;
-		this.description = description;
+	public TradingCompany(String ticker) {
+		this.description = ticker;
 		this.ticker = ticker;
 	}
 
 	public TradingCompany(String description, String ticker) {
 		this.description = description;
 		this.ticker = ticker;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
 	}
 
 	public String getDescription() {
@@ -55,18 +44,22 @@ public class TradingCompany {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-
 		TradingCompany that = (TradingCompany) o;
-
-		if (!id.equals(that.id)) return false;
-		return description.equals(that.description);
+		return Objects.equals(ticker, that.ticker) &&
+				Objects.equals(description, that.description);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = id.hashCode();
-		result = 31 * result + description.hashCode();
-		return result;
+		return Objects.hash(ticker, description);
+	}
+
+	@Override
+	public String toString() {
+		return "TradingCompany{" +
+				"ticker='" + ticker + '\'' +
+				", description='" + description + '\'' +
+				'}';
 	}
 }
 
