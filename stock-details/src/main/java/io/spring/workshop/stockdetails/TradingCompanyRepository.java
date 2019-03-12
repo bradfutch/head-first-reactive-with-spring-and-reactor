@@ -9,6 +9,4 @@ public interface TradingCompanyRepository extends ReactiveCrudRepository<Trading
 	@Query("select * from trading_company t where t.ticker = $1")
 	Mono<TradingCompany> findByTickerIgnoreCase(String ticker);
 
-	@Query("DROP TABLE IF EXISTS trading_company; CREATE TABLE trading_company ( ticker VARCHAR(100) PRIMARY KEY, description VARCHAR(100));")
-	Mono<TradingCompany> deleteAllById();
 }
