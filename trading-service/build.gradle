@@ -36,6 +36,7 @@ dependencies {
 
 	compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.9.8'
 	compile 'io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry'
+	compile 'org.springframework.cloud:spring-cloud-starter-sleuth'
 }
 
 dependencyManagement {

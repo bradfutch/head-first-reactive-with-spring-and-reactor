@@ -20,6 +20,7 @@ sourceCompatibility = '1.8'
 
 repositories {
 	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
 }
 
 ext {
@@ -28,14 +29,19 @@ ext {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
+//	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 
-    compile group: 'de.flapdoodle.embed', name: 'de.flapdoodle.embed.mongo'
-	compile 'io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry'
+//    compile group: 'de.flapdoodle.embed', name: 'de.flapdoodle.embed.mongo'
+	implementation 'io.pivotal.spring.cloud:spring-cloud-services-starter-service-registry'
+	implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+
+	implementation 'org.springframework.data:spring-data-r2dbc:1.0.0.M1'
+	implementation 'org.springframework.data:spring-data-jdbc:1.0.5.RELEASE'
+	implementation 'io.r2dbc:r2dbc-postgresql:1.0.0.M7'
 }
 
 dependencyManagement {
